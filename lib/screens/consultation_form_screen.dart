@@ -33,6 +33,10 @@ class _ConsultationFormScreenState extends State<ConsultationFormScreen> {
   late List<String> poliList;
 
   bool isLoading = false;
+  String? nameError;
+  String? dateError;
+  String? poliError;
+  String? complaintError;
 
   @override
   void initState() {
@@ -66,11 +70,38 @@ class _ConsultationFormScreenState extends State<ConsultationFormScreen> {
     if (picked != null) {
       setState(() {
         selectedDate = picked;
+        dateError = null;
       });
     }
   }
 
+  bool validateForm() {
+    bool isValid = true;
+    setState(() {
+      nameError = _nameController.text.isEmpty
+          ? "Nama tidak boleh kosong"
+          : null;
+      dateError = selectedDate == null ? "Pilih tanggal terlebih dahulu" : null;
+      poliError = selectedPoli == null ? "Pilih poli terlebih dahulu" : null;
+      complaintError = _complaintController.text.isEmpty
+          ? "Keluhan tidak boleh kosong"
+          : null;
+    });
+
+    if (nameError != null ||
+        dateError != null ||
+        poliError != null ||
+        complaintError != null) {
+      isValid = false;
+    }
+    return isValid;
+  }
+
   void submit() async {
+    if (!validateForm()) {
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
@@ -95,6 +126,8 @@ class _ConsultationFormScreenState extends State<ConsultationFormScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Error $e")));
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
@@ -102,270 +135,206 @@ class _ConsultationFormScreenState extends State<ConsultationFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.id == null ? "Daftar antrian" : "Edit antrian"),
+        title: Text(widget.id == null ? "Daftar Antrian" : "Edit antrian"),
         elevation: 0,
-        backgroundColor: Color(0xFF2196F3),
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.black,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF5F5F5), Color(0xFFE8F4F8)],
-          ),
-        ),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(20),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Card
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+              // Nama Pasien
+              TextField(
+                controller: _nameController,
+                onChanged: (value) {
+                  if (value.isNotEmpty && nameError != null) {
+                    setState(() => nameError = null);
+                  }
+                },
+                decoration: InputDecoration(
+                  labelText: "Nama Pasien",
+                  labelStyle: TextStyle(
+                    color: nameError != null ? Colors.red : Colors.black87,
+                    fontWeight: nameError != null
+                        ? FontWeight.w500
+                        : FontWeight.normal,
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.local_hospital, color: Colors.white, size: 32),
-                    SizedBox(height: 8),
-                    Text(
-                      widget.id == null
-                          ? "Pendaftaran Konsultasi Baru"
-                          : "Ubah Data Konsultasi",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  errorText: nameError,
+                  errorStyle: TextStyle(color: Colors.red, fontSize: 12),
+                  border: UnderlineInputBorder(),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(
+                      color: nameError != null ? Colors.red : Colors.grey[300]!,
                     ),
-                  ],
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blue, width: 2),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(vertical: 8),
                 ),
               ),
               SizedBox(height: 24),
-              // Form Card
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+
+              // Tanggal
+              Text(
+                "Pilih tanggal",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: dateError != null ? Colors.red : Colors.black87,
+                  fontWeight: dateError != null
+                      ? FontWeight.w500
+                      : FontWeight.normal,
                 ),
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+              GestureDetector(
+                onTap: pickDate,
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: dateError != null
+                            ? Colors.red
+                            : Colors.grey[300]!,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Nama Pasien
                       Text(
-                        "Nama Pasien",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: Color(0xFF424242),
-                        ),
+                        selectedDate == null
+                            ? "Pilih tanggal"
+                            : "${selectedDate!.day.toString().padLeft(2, '0')}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.year}",
+                        style: TextStyle(fontSize: 14, color: Colors.blue),
                       ),
-                      SizedBox(height: 8),
-                      TextField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          hintText: "Masukkan nama pasien",
-                          prefixIcon: Icon(
-                            Icons.person,
-                            color: Color(0xFF2196F3),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: Color(0xFF2196F3),
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      // Tanggal
-                      Text(
-                        "Tanggal Konsultasi",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: Color(0xFF424242),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Color(0xFFBDBDBD)),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: pickDate,
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 14,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.calendar_today,
-                                    color: Color(0xFF2196F3),
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      selectedDate == null
-                                          ? "Pilih tanggal"
-                                          : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: selectedDate == null
-                                            ? Color(0xFF9E9E9E)
-                                            : Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Color(0xFF2196F3),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      // Poli
-                      Text(
-                        "Pilih Poli",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: Color(0xFF424242),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      DropdownButtonFormField(
-                        value: selectedPoli,
-                        decoration: InputDecoration(
-                          hintText: "Pilih poli",
-                          prefixIcon: Icon(
-                            Icons.local_hospital,
-                            color: Color(0xFF2196F3),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: Color(0xFF2196F3),
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        items: poliList.map((poli) {
-                          return DropdownMenuItem(
-                            child: Text(poli),
-                            value: poli,
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedPoli = value!;
-                          });
-                        },
-                      ),
-                      SizedBox(height: 20),
-                      // Keluhan
-                      Text(
-                        "Keluhan",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: Color(0xFF424242),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      TextField(
-                        controller: _complaintController,
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          hintText: "Jelaskan keluhan anda",
-                          prefixIcon: Padding(
-                            padding: EdgeInsets.only(right: 8),
-                            child: Icon(
-                              Icons.description,
-                              color: Color(0xFF2196F3),
-                            ),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                              color: Color(0xFF2196F3),
-                              width: 2,
-                            ),
-                          ),
-                          alignLabelWithHint: true,
-                        ),
-                      ),
-                      SizedBox(height: 28),
-                      // Submit Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF2196F3),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: isLoading
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.save, color: Colors.white),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      "Simpan",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
+                      Icon(Icons.calendar_today, color: Colors.blue, size: 20),
                     ],
                   ),
+                ),
+              ),
+              if (dateError != null)
+                Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Text(
+                    dateError!,
+                    style: TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                ),
+              SizedBox(height: 24),
+
+              // Poli
+              Text(
+                "Pilih poli",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: poliError != null ? Colors.red : Colors.black87,
+                  fontWeight: poliError != null
+                      ? FontWeight.w500
+                      : FontWeight.normal,
+                ),
+              ),
+              DropdownButtonFormField(
+                value: selectedPoli,
+                decoration: InputDecoration(
+                  errorText: poliError,
+                  errorStyle: TextStyle(fontSize: 12),
+                  border: UnderlineInputBorder(),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(
+                      color: poliError != null ? Colors.red : Colors.grey[300]!,
+                    ),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blue, width: 2),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                ),
+                isExpanded: true,
+                items: poliList.map((poli) {
+                  return DropdownMenuItem(child: Text(poli), value: poli);
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedPoli = value;
+                    if (value != null && poliError != null) {
+                      poliError = null;
+                    }
+                  });
+                },
+              ),
+              SizedBox(height: 24),
+
+              // Keluhan
+              TextField(
+                controller: _complaintController,
+                onChanged: (value) {
+                  if (value.isNotEmpty && complaintError != null) {
+                    setState(() => complaintError = null);
+                  }
+                },
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: "Keluhan",
+                  labelStyle: TextStyle(
+                    color: complaintError != null ? Colors.red : Colors.black87,
+                    fontWeight: complaintError != null
+                        ? FontWeight.w500
+                        : FontWeight.normal,
+                  ),
+                  errorText: complaintError,
+                  errorStyle: TextStyle(color: Colors.red, fontSize: 12),
+                  border: UnderlineInputBorder(),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(
+                      color: complaintError != null
+                          ? Colors.red
+                          : Colors.grey[300]!,
+                    ),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blue, width: 2),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                  alignLabelWithHint: true,
+                ),
+              ),
+              SizedBox(height: 32),
+
+              // Tombol Simpan
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  child: isLoading
+                      ? SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          "Simpan",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                 ),
               ),
             ],
