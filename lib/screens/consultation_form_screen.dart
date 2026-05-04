@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_consultation_app/services/api_services.dart';
+import 'package:flutter_consultation_app/providers/consultation_provider.dart';
+import 'package:provider/provider.dart';
+
 
 class ConsultationFormScreen extends StatefulWidget {
   final int? id;
@@ -25,7 +27,6 @@ class ConsultationFormScreen extends StatefulWidget {
 class _ConsultationFormScreenState extends State<ConsultationFormScreen> {
   final _nameController = TextEditingController();
   final _complaintController = TextEditingController();
-  final ApiService apiService = ApiService();
 
   String? selectedPoli;
   DateTime? selectedDate;
@@ -98,6 +99,7 @@ class _ConsultationFormScreenState extends State<ConsultationFormScreen> {
   }
 
   void submit() async {
+    final provider = context.read<ConsultationProvider>();
     if (!validateForm()) {
       return;
     }
@@ -106,14 +108,14 @@ class _ConsultationFormScreenState extends State<ConsultationFormScreen> {
 
     try {
       if (widget.id == null) {
-        await apiService.createConsultation(
+        await provider.create(
           _nameController.text,
           selectedDate!,
           selectedPoli!,
           _complaintController.text,
         );
       } else {
-        await apiService.updateConsultation(
+        await provider.update(
           widget.id!,
           _nameController.text,
           selectedDate!,
